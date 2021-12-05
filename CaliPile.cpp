@@ -15,9 +15,9 @@
 
 #define delay			HAL_Delay
 
-void CALIPILE::setup(uint8_t i2c_addr, I2C_HandleTypeDef *i2c_handle) {
+void CALIPILE::setup(uint8_t i2c_address, I2C_HandleTypeDef *i2c_handle) {
 	i2c_han = i2c_handle;
-	i2c_addr = i2c_addr;
+	i2c_addr = i2c_address << 1;
 }
 
 void CALIPILE::wake() {
@@ -31,45 +31,45 @@ void CALIPILE::readEEPROM()
 	uint8_t rawData[2] = {0, 0};
 	/* Start of EEPROM operations, just have to do once *************************************************** */
 	// Check EEPROM protocol number as a test of I2C communication
-	writeByte(CALIPILE_ADDRESS, CALIPILE_EEPROM_CONTROL, 0x80);// enable EEPROM read
+	writeByte(i2c_addr, CALIPILE_EEPROM_CONTROL, 0x80);// enable EEPROM read
 
-	uint8_t c = readByte(CALIPILE_ADDRESS, CALIPILE_EEPROM_PROTOCOL);
+	uint8_t c = readByte(i2c_addr, CALIPILE_EEPROM_PROTOCOL);
 	//Serial.print("CaliPile EEPROM protocol number is "); //Serial.println(c);
 	//Serial.println("CaliPile EEPROM protocol number should be 3");
 
-	uint8_t d = readByte(CALIPILE_ADDRESS, CALIPILE_SLAVE_ADDRESS);
+	uint8_t d = readByte(i2c_addr, CALIPILE_SLAVE_ADDRESS);
 	//Serial.print("CaliPile EEPROM slave address is "); //Serial.println(d);
 	//Serial.println("CaliPile EEPROM slave address should be 140");
 	//Serial.println(" ");
 
 	// Read the EEPROM calibration constants
 
-	_LOOKUP = readByte(CALIPILE_ADDRESS, CALIPILE_EEPROM_LOOKUPNUM);
+	_LOOKUP = readByte(i2c_addr, CALIPILE_EEPROM_LOOKUPNUM);
 	//Serial.print("CaliPile LookUpNumber is "); //Serial.println(_LOOKUP);
 
-	readBytes(CALIPILE_ADDRESS, CALIPILE_EEPROM_PTAT25, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_EEPROM_PTAT25, 2, &rawData[0]);
 	_PTAT25 = ( (uint16_t) rawData[0] << 8) | rawData[1];
 	//Serial.print("CaliPile PTAT25 is "); //Serial.println(_PTAT25);
 
-	readBytes(CALIPILE_ADDRESS, CALIPILE_EEPROM_M, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_EEPROM_M, 2, &rawData[0]);
 	_M = ( (uint16_t) rawData[0] << 8) | rawData[1];
 	_M /= 100;
 	//Serial.print("CaliPile M is "); //Serial.println(_M);
 
-	readBytes(CALIPILE_ADDRESS, CALIPILE_EEPROM_U0, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_EEPROM_U0, 2, &rawData[0]);
 	_U0 = ( (uint16_t) rawData[0] << 8) | rawData[1];
 	_U0 += 32768;
 	//Serial.print("CaliPile U0 is "); //Serial.println(_U0);
 
-	readBytes(CALIPILE_ADDRESS, CALIPILE_EEPROM_UOUT1, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_EEPROM_UOUT1, 2, &rawData[0]);
 	_UOUT1 = ( (uint16_t) rawData[0] << 8) | rawData[1];
 	_UOUT1 *= 2;
 	//Serial.print("CaliPile UOUT1 is "); //Serial.println(_UOUT1);
 
-	_TOBJ1 = readByte(CALIPILE_ADDRESS, CALIPILE_EEPROM_TOBJ1);
+	_TOBJ1 = readByte(i2c_addr, CALIPILE_EEPROM_TOBJ1);
 	//Serial.print("CaliPile TOBJ1 is "); //Serial.println(_TOBJ1);
 
-	readBytes(CALIPILE_ADDRESS, CALIPILE_EEPROM_CHECKSUM, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_EEPROM_CHECKSUM, 2, &rawData[0]);
 	_CHECKSUM = ( (uint16_t) rawData[0] << 8) | rawData[1];
 	//Serial.print("CaliPile CHECKSUM is supposed to be "); //Serial.println(_CHECKSUM);
 
@@ -77,11 +77,11 @@ void CALIPILE::readEEPROM()
 	uint16_t sum = 0;
 	for(int ii = 35; ii < 64; ii++)
 	{
-		sum += readByte(CALIPILE_ADDRESS, ii);
+		sum += readByte(i2c_addr, ii);
 	}
 	//Serial.print("CaliPile CHECKSUM is "); //Serial.println(sum + c);
 
-	writeByte(CALIPILE_ADDRESS, CALIPILE_EEPROM_CONTROL, 0x00); // disable EEPROM read
+	writeByte(i2c_addr, CALIPILE_EEPROM_CONTROL, 0x00); // disable EEPROM read
 	/* End of EEPROM operations, just have to do once *************************************************** */
 
 	// Construct needed calibration constants (just need to calculate once)
@@ -90,54 +90,54 @@ void CALIPILE::readEEPROM()
 }
 
 uint8_t CALIPILE::checkIntStatus() {
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_INTERRUPT_STATUS);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_INTERRUPT_STATUS);
 	return temp;
 }
 
 void CALIPILE::initMotion(uint8_t tcLP1, uint8_t tcLP2, uint8_t TPsource, uint8_t cycTime) {
 	// Initialize the sensor for motion and presence detection
 	// Tthr (bit 4), presence (bit(3), motion (bit 2), amb shock (bit 1), timer (bit 0) interrupts allowed
-	writeByte(CALIPILE_ADDRESS, CALIPILE_INT_MASK, 0x1C);
+	writeByte(i2c_addr, CALIPILE_INT_MASK, 0x1C);
 	// time constant for LP1 (bits 0 - 3) and LP2 (bits 4 - 7)
-	writeByte(CALIPILE_ADDRESS, CALIPILE_SLP12, tcLP2 << 4 | tcLP1);
+	writeByte(i2c_addr, CALIPILE_SLP12, tcLP2 << 4 | tcLP1);
 	// select cycle time (bits 0 - 1) for motion detection, source (bits) 2 - 3) for presence detection
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_SRC_SELECT);
-	writeByte(CALIPILE_ADDRESS, CALIPILE_SRC_SELECT, temp | TPsource << 2 | cycTime);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_SRC_SELECT);
+	writeByte(i2c_addr, CALIPILE_SRC_SELECT, temp | TPsource << 2 | cycTime);
 	// select motion threshold
-	writeByte(CALIPILE_ADDRESS, CALIPILE_TP_PRES_THLD, 0x22);// presence threshold, set at 50 counts
-	writeByte(CALIPILE_ADDRESS, CALIPILE_TP_MOT_THLD, 0x0A);// motion threshold, set at 10 counts
+	writeByte(i2c_addr, CALIPILE_TP_PRES_THLD, 0x22);// presence threshold, set at 50 counts
+	writeByte(i2c_addr, CALIPILE_TP_MOT_THLD, 0x0A);// motion threshold, set at 10 counts
 }
 
 void CALIPILE::initTempThr(uint16_t Tcounts) {
 	uint8_t rawData[2] = {0, 0};
 	// specify the over temperature interrupt threshold (2 bytes)
-	writeByte(CALIPILE_ADDRESS, CALIPILE_TPOT_THR, Tcounts);// 0x83 means 67,072 counts as threshold
-	writeByte(CALIPILE_ADDRESS, (CALIPILE_TPOT_THR + 1), 0x00);
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_SRC_SELECT);
-	writeByte(CALIPILE_ADDRESS, CALIPILE_SRC_SELECT, temp | 0x10);// interrupt on exceeding threshold
+	writeByte(i2c_addr, CALIPILE_TPOT_THR, Tcounts);// 0x83 means 67,072 counts as threshold
+	writeByte(i2c_addr, (CALIPILE_TPOT_THR + 1), 0x00);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_SRC_SELECT);
+	writeByte(i2c_addr, CALIPILE_SRC_SELECT, temp | 0x10);// interrupt on exceeding threshold
 	// Verify threshold set
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPOT_THR, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPOT_THR, 2, &rawData[0]);
 	uint16_t TPOTTHR = ((uint16_t) rawData[0] << 8) | rawData[1];
 	//Serial.print("Overtemp threshold = "); //Serial.println(TPOTTHR * 2);
 }
 
 uint16_t CALIPILE::getTPAMB() {
 	uint8_t rawData[2] = {0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPAMBIENT, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPAMBIENT, 2, &rawData[0]);
 	uint16_t temp = ( (uint16_t)(rawData[0] & 0x7F) << 8) | rawData[1];
 	return temp;
 }
 
 uint32_t CALIPILE::getTPOBJ() {
 	uint8_t rawData[3] = {0, 0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPOBJECT, 3, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPOBJECT, 3, &rawData[0]);
 	uint32_t temp = ( (uint32_t) ( (uint32_t)rawData[0] << 24) | ( (uint32_t)rawData[1] << 16) | ( (uint32_t)rawData[2] & 0x80) << 8) >> 15;
 	return temp;
 }
 
 uint32_t CALIPILE::getTPOBJLP1() {
 	uint8_t rawData[3] = {0, 0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPOBJLP1, 3, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPOBJLP1, 3, &rawData[0]);
 	uint32_t temp = ( ((uint32_t) rawData[0] << 16) | ((uint32_t) rawData[1] << 8) | ( (uint32_t)rawData[2] & 0xF0) ) >> 4;
 	temp /= 8;
 	return temp;
@@ -145,7 +145,7 @@ uint32_t CALIPILE::getTPOBJLP1() {
 
 uint32_t CALIPILE::getTPOBJLP2() {
 	uint8_t rawData[3] = {0, 0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPOBJLP2, 3, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPOBJLP2, 3, &rawData[0]);
 	uint32_t temp = ((uint32_t) (rawData[0] & 0x0F) << 16) | ((uint32_t) rawData[1] << 8) | rawData[2];
 	temp /= 8;
 	return temp;
@@ -153,7 +153,7 @@ uint32_t CALIPILE::getTPOBJLP2() {
 
 uint16_t CALIPILE::getTPAMBLP3() {
 	uint8_t rawData[2] = {0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPAMBLP3, 2, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPAMBLP3, 2, &rawData[0]);
 	uint16_t temp = ((uint16_t) rawData[0] << 8) | rawData[1];
 	temp /= 2;
 	return temp;
@@ -161,24 +161,24 @@ uint16_t CALIPILE::getTPAMBLP3() {
 
 uint32_t CALIPILE::getTPOBJLP2FRZN() {
 	uint8_t rawData[3] = {0, 0, 0};
-	readBytes(CALIPILE_ADDRESS, CALIPILE_TPOBJLP2_FRZN, 3, &rawData[0]);
+	readBytes(i2c_addr, CALIPILE_TPOBJLP2_FRZN, 3, &rawData[0]);
 	uint32_t temp = ((uint32_t) rawData[0] << 16) | ((uint32_t) rawData[1] << 8) | rawData[2];
 	temp /= 128;
 	return temp;
 }
 
 uint8_t CALIPILE::getTPPRESENCE() {
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_TPPRESENCE);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_TPPRESENCE);
 	return temp;
 }
 
 uint8_t CALIPILE::getTPMOTION() {
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_TPMOTION);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_TPMOTION);
 	return temp;
 }
 
 uint8_t CALIPILE::getTPAMBSHK() {
-	uint8_t temp = readByte(CALIPILE_ADDRESS, CALIPILE_TPAMB_SHOCK);
+	uint8_t temp = readByte(i2c_addr, CALIPILE_TPAMB_SHOCK);
 	return temp;
 }
 

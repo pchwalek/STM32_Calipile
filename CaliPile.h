@@ -87,7 +87,7 @@ extern "C" {
 class CALIPILE
 {
   public:
-  void setup(uint8_t i2c_addr = CALIPILE_ADDRESS, I2C_HandleTypeDef *i2c_handle = 0);
+  void setup(uint8_t i2c_address = CALIPILE_ADDRESS, I2C_HandleTypeDef *i2c_handle = 0);
   uint8_t getChipID();
   void wake();
   void readEEPROM();
