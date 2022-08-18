@@ -14,14 +14,18 @@
 #include "math.h"
 
 #define delay			HAL_Delay
+#define I2C_TIMEOUT		100
 
-void CALIPILE::setup(uint8_t i2c_address, I2C_HandleTypeDef *i2c_handle) {
+void CALIPILE::setup(uint8_t i2c_address, I2C_HandleTypeDef *i2c_handle, uint8_t identifier) {
 	i2c_han = i2c_handle;
 	i2c_addr = i2c_address << 1;
+	descriptor = identifier;
 }
 
 void CALIPILE::wake() {
-	writeByte(0x00, 0x04, 0x00);  // issue general call and reload command
+//	writeByte(0x00, 0x04, 0x00);  // issue general call and reload command
+	uint8_t data = 0;
+	HAL_I2C_Mem_Write(i2c_han, 0, 0x04, 1, &data, 1, I2C_TIMEOUT);
 	delay(1);
 }
 
@@ -256,7 +260,7 @@ void CALIPILE::readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uin
 
 bool CALIPILE::write(uint8_t *data, uint8_t size) {
 	if (HAL_OK
-			== HAL_I2C_Master_Transmit(i2c_han, i2c_addr, data, size, 10)) {
+			== HAL_I2C_Master_Transmit(i2c_han, i2c_addr, data, size, I2C_TIMEOUT)) {
 		return true;
 	} else {
 		return false;
@@ -265,16 +269,18 @@ bool CALIPILE::write(uint8_t *data, uint8_t size) {
 
 bool CALIPILE::read(uint8_t *data, uint8_t size) {
 	if (HAL_OK
-			== HAL_I2C_Master_Receive(i2c_han, i2c_addr, data, size, 10)) {
+			== HAL_I2C_Master_Receive(i2c_han, i2c_addr, data, size, I2C_TIMEOUT)) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
+HAL_StatusTypeDef test;
 bool CALIPILE::readRegister(uint16_t mem_addr, uint8_t *dest, uint16_t size) {
+	test = HAL_I2C_Mem_Read(i2c_han, i2c_addr, mem_addr, 1, dest, size, I2C_TIMEOUT);
 	if (HAL_OK
-			== HAL_I2C_Mem_Read(i2c_han, i2c_addr, mem_addr, 1, dest, size, 10)) {
+			== test) {
 		return true;
 	} else {
 		return false;
@@ -283,7 +289,7 @@ bool CALIPILE::readRegister(uint16_t mem_addr, uint8_t *dest, uint16_t size) {
 
 bool CALIPILE::writeRegister(uint8_t mem_addr, uint8_t *val, uint16_t size) {
 	if (HAL_OK
-			== HAL_I2C_Mem_Write(i2c_han, i2c_addr, mem_addr, 1, val, size, 10)) {
+			== HAL_I2C_Mem_Write(i2c_han, i2c_addr, mem_addr, 1, val, size, I2C_TIMEOUT)) {
 		return true;
 	} else {
 		return false;

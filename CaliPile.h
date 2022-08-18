@@ -87,7 +87,7 @@ extern "C" {
 class CALIPILE
 {
   public:
-  void setup(uint8_t i2c_address = CALIPILE_ADDRESS, I2C_HandleTypeDef *i2c_handle = 0);
+  void setup(uint8_t i2c_address = CALIPILE_ADDRESS, I2C_HandleTypeDef *i2c_handle = 0, uint8_t identifier=0);
   uint8_t getChipID();
   void wake();
   void readEEPROM();
@@ -113,6 +113,7 @@ class CALIPILE
   bool read(uint8_t *data, uint8_t size);
   bool writeRegister(uint8_t mem_addr, uint8_t *val, uint16_t size);
   bool readRegister(uint16_t mem_addr, uint8_t *dest, uint16_t size);
+  uint8_t descriptor;
 
   private:
 	I2C_HandleTypeDef *i2c_han = NULL;///< Pointer to I2C bus interface
