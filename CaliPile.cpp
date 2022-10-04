@@ -276,11 +276,9 @@ bool CALIPILE::read(uint8_t *data, uint8_t size) {
 	}
 }
 
-HAL_StatusTypeDef test;
 bool CALIPILE::readRegister(uint16_t mem_addr, uint8_t *dest, uint16_t size) {
-	test = HAL_I2C_Mem_Read(i2c_han, i2c_addr, mem_addr, 1, dest, size, I2C_TIMEOUT);
 	if (HAL_OK
-			== test) {
+			== HAL_I2C_Mem_Read(i2c_han, i2c_addr, mem_addr, 1, dest, size, I2C_TIMEOUT)) {
 		return true;
 	} else {
 		return false;
