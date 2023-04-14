@@ -14,7 +14,7 @@
 #include "math.h"
 
 #define delay			HAL_Delay
-#define I2C_TIMEOUT		100
+#define I2C_TIMEOUT		10
 
 void CALIPILE::setup(uint8_t i2c_address, I2C_HandleTypeDef *i2c_handle, uint8_t identifier) {
 	i2c_han = i2c_handle;
